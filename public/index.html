@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Avaliador de Tradução</title>
+    <style>
+      :root {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        color: #1f2933;
+        background-color: #f8fafc;
+      }
+
+      body {
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+        padding: 2rem 1rem;
+      }
+
+      main {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        width: min(640px, 100%);
+      }
+
+      h1 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        font-size: 1.8rem;
+      }
+
+      p.description {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        color: #52606d;
+      }
+
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 140px;
+        padding: 0.85rem;
+        border-radius: 10px;
+        border: 1px solid #cbd2d9;
+        font-size: 1rem;
+        resize: vertical;
+        transition: border-color 0.2s ease;
+      }
+
+      textarea:focus {
+        border-color: #2563eb;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      }
+
+      button {
+        margin-top: 1.25rem;
+        padding: 0.9rem 1.6rem;
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 999px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      button:hover {
+        background-color: #1d4ed8;
+      }
+
+      #result {
+        margin-top: 1.5rem;
+        border-radius: 10px;
+        padding: 1.25rem;
+        background: #f1f5f9;
+        white-space: pre-wrap;
+      }
+
+      .error {
+        background-color: #fee2e2;
+        color: #991b1b;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Avaliador de Tradução</h1>
+      <p class="description">
+        Informe a sua tradução para a frase em inglês "How are you?" e veja a
+        nota gerada pela API OpenRouter.
+      </p>
+      <form id="prompt-form">
+        <label for="prompt">Digite sua tradução:</label>
+        <textarea
+          id="prompt"
+          name="prompt"
+          placeholder="Ex.: Como você está?"
+          required
+        ></textarea>
+        <button type="submit">Enviar para avaliação</button>
+      </form>
+      <div id="result" hidden></div>
+    </main>
+
+    <script>
+      const form = document.getElementById('prompt-form');
+      const promptInput = document.getElementById('prompt');
+      const resultBox = document.getElementById('result');
+
+      async function evaluatePrompt(event) {
+        event.preventDefault();
+        resultBox.hidden = true;
+        resultBox.classList.remove('error');
+        resultBox.textContent = 'Enviando...';
+        resultBox.hidden = false;
+
+        try {
+          const response = await fetch('/api/evaluate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: promptInput.value.trim() })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Erro inesperado.');
+          }
+
+          const content = data?.choices?.[0]?.message?.content ?? 'Nenhuma resposta recebida.';
+          resultBox.textContent = content;
+        } catch (error) {
+          resultBox.textContent = `Erro: ${error.message}`;
+          resultBox.classList.add('error');
+        } finally {
+          resultBox.hidden = false;
+        }
+      }
+
+      form.addEventListener('submit', evaluatePrompt);
+    </script>
+  </body>
+</html>
