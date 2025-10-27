@@ -139,8 +139,22 @@
             throw new Error(data.error || 'Erro inesperado.');
           }
 
-          const content = data?.choices?.[0]?.message?.content ?? 'Nenhuma resposta recebida.';
-          resultBox.textContent = content;
+          const score = Number(data?.score);
+          const feedback = data?.feedback;
+          const correctTranslation = data?.correctTranslation;
+
+          const lines = [];
+          if (Number.isFinite(score)) {
+            lines.push(`Nota: ${score}`);
+          }
+          if (feedback) {
+            lines.push(`Feedback: ${feedback}`);
+          }
+          if (correctTranslation) {
+            lines.push(`Tradução correta: ${correctTranslation}`);
+          }
+
+          resultBox.textContent = lines.join('\n') || 'Nenhuma resposta recebida.';
         } catch (error) {
           resultBox.textContent = `Erro: ${error.message}`;
           resultBox.classList.add('error');
