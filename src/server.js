@@ -32,7 +32,7 @@ app.post('/api/evaluate', async (req, res) => {
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'tngtech/deepseek-r1t2-chimera:free',
+        model: 'z-ai/glm-4.5-air:free',
         messages: [
           {
             role: 'system',
