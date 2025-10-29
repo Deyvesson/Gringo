@@ -2,7 +2,6 @@ import express from 'express';
 //import cors from 'cors';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 if (!GEMINI_API_KEY) {
@@ -114,6 +113,4 @@ app.post('/api/evaluate', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
+export default app;
