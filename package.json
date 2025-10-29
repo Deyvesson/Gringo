@@ -1,7 +1,7 @@
 {
-  "name": "openrouter-evaluator",
+  "name": "gringo",
   "version": "1.0.0",
-  "description": "Node.js app that evaluates translations via OpenRouter API",
+  "description": "App de Idiomas",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
