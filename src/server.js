@@ -1,5 +1,10 @@
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 //import cors from 'cors';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -10,7 +15,8 @@ if (!GEMINI_API_KEY) {
 
 //app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+const publicDir = path.join(__dirname, '../public');
+app.use(express.static(publicDir));
 
 app.post('/api/evaluate', async (req, res) => {
   const { prompt } = req.body;
@@ -111,6 +117,10 @@ app.post('/api/evaluate', async (req, res) => {
     console.error('Erro inesperado ao chamar API Gemini:', error);
     return res.status(500).json({ error: 'Erro interno ao consultar a API Gemini.' });
   }
+});
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(publicDir, 'index.html'));
 });
 
 export default app;
