@@ -3,167 +3,396 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Avaliador de Tradução</title>
-    <style>
-      :root {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        color: #1f2933;
-        background-color: #f8fafc;
-      }
-
-      body {
-        margin: 0;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
-        padding: 2rem 1rem;
-      }
-
-      main {
-        background: white;
-        padding: 2rem;
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-        width: min(640px, 100%);
-      }
-
-      h1 {
-        margin-top: 0;
-        margin-bottom: 1rem;
-        font-size: 1.8rem;
-      }
-
-      p.description {
-        margin-top: 0;
-        margin-bottom: 1.5rem;
-        color: #52606d;
-      }
-
-      label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 0.75rem;
-      }
-
-      textarea {
-        width: 100%;
-        min-height: 140px;
-        padding: 0.85rem;
-        border-radius: 10px;
-        border: 1px solid #cbd2d9;
-        font-size: 1rem;
-        resize: vertical;
-        transition: border-color 0.2s ease;
-      }
-
-      textarea:focus {
-        border-color: #2563eb;
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-      }
-
-      button {
-        margin-top: 1.25rem;
-        padding: 0.9rem 1.6rem;
-        background-color: #2563eb;
-        color: white;
-        border: none;
-        border-radius: 999px;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-      }
-
-      button:hover {
-        background-color: #1d4ed8;
-      }
-
-      #result {
-        margin-top: 1.5rem;
-        border-radius: 10px;
-        padding: 1.25rem;
-        background: #f1f5f9;
-        white-space: pre-wrap;
-      }
-
-      .error {
-        background-color: #fee2e2;
-        color: #991b1b;
-      }
-    </style>
+    <title>Gringo - Treinador de Tradução</title>
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body>
-    <main>
-      <h1>Avaliador de Tradução</h1>
-      <p class="description">
-        Informe a sua tradução para a frase em inglês "How are you?" e veja a
-        nota gerada pela API OpenRouter.
-      </p>
-      <form id="prompt-form">
-        <label for="prompt">Digite sua tradução:</label>
-        <textarea
-          id="prompt"
-          name="prompt"
-          placeholder="Ex.: Como você está?"
-          required
-        ></textarea>
-        <button type="submit">Enviar para avaliação</button>
-      </form>
-      <div id="result" hidden></div>
+  <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 text-slate-800 font-sans">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-slate-200">
+      <div class="mx-auto max-w-4xl px-4 py-3">
+        <h1 class="text-xl font-bold text-slate-900 text-center">Gringo - Tradutor</h1>
+      </div>
+    </header>
+
+    <main class="mx-auto flex min-h-[calc(100vh-80px)] max-w-3xl flex-col justify-center px-3 py-6">
+      <div id="flow-status" hidden class="mb-3 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-sm"></div>
+      
+      <section class="w-full rounded-2xl bg-white p-6 shadow-2xl shadow-slate-900/10">
+        <!-- Frase em Inglês -->
+        <div class="mb-6 text-center">
+          <div id="current-phrase" class="text-xl font-semibold text-slate-900 min-h-[50px] flex items-center justify-center px-2"></div>
+        </div>
+
+        <!-- Formulário -->
+        <form id="prompt-form" class="space-y-4">
+          <div>
+            <textarea
+              id="prompt"
+              name="prompt"
+              placeholder=""
+              required
+              class="w-full min-h-[100px] resize-y rounded-xl border-2 border-slate-300 bg-white px-4 py-3 text-base text-slate-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-200"
+            ></textarea>
+          </div>
+          <button
+            id="submit-button"
+            type="submit"
+            class="w-full inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:bg-blue-700 hover:shadow-xl active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          >
+            Avaliar Tradução
+          </button>
+        </form>
+
+        <button
+          id="refresh-phrases"
+          type="button"
+          class="mt-4 w-full inline-flex items-center justify-center rounded-xl bg-green-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-green-700 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-green-600 hidden"
+        >
+          Buscar novas frases agora
+        </button>
+        
+        <div
+          id="result"
+          hidden
+          class="mt-6 whitespace-pre-wrap rounded-xl bg-slate-100 p-5 text-sm text-slate-700"
+        ></div>
+      </section>
     </main>
 
+    <!-- Modal de Resultado -->
+    <div id="result-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-3 z-50">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
+        <div class="text-center">
+          <div id="modal-score" class="text-5xl font-bold mb-3"></div>
+          <h3 class="text-xl font-semibold text-slate-900 mb-3">Resultado</h3>
+          <div id="modal-feedback" class="text-sm text-slate-700 mb-3 text-left bg-slate-50 p-3 rounded-xl"></div>
+          <div id="modal-correct" class="text-sm text-slate-600 mb-4 text-left bg-blue-50 p-3 rounded-xl border border-blue-200"></div>
+          <button
+            id="continue-button"
+            class="w-full inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:bg-blue-700 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
+          >
+            Continuar
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script>
+      const STORAGE_KEY = 'translationTrainer.phraseQueue.v1';
+      const DEFAULT_BATCH_COUNT = 100;
+      const MIN_QUEUE_BEFORE_REFRESH_HINT = 10;
+
+      // DOM elements
       const form = document.getElementById('prompt-form');
       const promptInput = document.getElementById('prompt');
-      const resultBox = document.getElementById('result');
+      const submitButton = document.getElementById('submit-button');
+      const resultDiv = document.getElementById('result');
+      const currentPhraseDiv = document.getElementById('current-phrase');
+      const flowStatusDiv = document.getElementById('flow-status');
+      const refreshButton = document.getElementById('refresh-phrases');
+      const resultModal = document.getElementById('result-modal');
+      const modalScore = document.getElementById('modal-score');
+      const modalFeedback = document.getElementById('modal-feedback');
+      const modalCorrect = document.getElementById('modal-correct');
+      const continueButton = document.getElementById('continue-button');
 
-      async function evaluatePrompt(event) {
+      // State
+      let phraseQueue = [];
+      let currentPhrase = '';
+
+      // Storage functions
+      function loadQueueFromStorage() {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (!stored) return [];
+          const parsed = JSON.parse(stored);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+          console.error('Erro ao carregar frases do localStorage:', error);
+          return [];
+        }
+      }
+
+      function saveQueueToStorage() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(phraseQueue));
+        } catch (error) {
+          console.error('Erro ao salvar frases no localStorage:', error);
+        }
+      }
+
+      // UI helper functions
+      function setStatus(message, type = 'info') {
+        if (!message) {
+          flowStatusDiv.hidden = true;
+          return;
+        }
+        flowStatusDiv.textContent = message;
+        flowStatusDiv.hidden = false;
+        flowStatusDiv.className = type === 'error' 
+          ? 'mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700'
+          : 'mt-4 rounded-xl border border-slate-200 bg-white/80 p-4 text-sm text-slate-700';
+      }
+
+      function showResultMessage(message, isError = false) {
+        if (!message) {
+          resultDiv.hidden = true;
+          return;
+        }
+        resultDiv.textContent = message;
+        resultDiv.hidden = false;
+        resultDiv.className = isError
+          ? 'mt-6 whitespace-pre-wrap rounded-xl bg-red-100 p-5 text-sm text-red-700'
+          : 'mt-6 whitespace-pre-wrap rounded-xl bg-slate-100 p-5 text-sm text-slate-700';
+      }
+
+      function showResultModal(score, feedback, correctTranslation) {
+        const scoreColor = score >= 8 ? 'text-green-600' : score >= 5 ? 'text-yellow-600' : 'text-red-600';
+        modalScore.textContent = score !== null ? `${score}/10` : '—';
+        modalScore.className = `text-5xl font-bold mb-3 ${scoreColor}`;
+        modalFeedback.innerHTML = `<strong>Feedback:</strong><br>${feedback || 'Nenhum feedback disponível.'}`;
+        modalCorrect.innerHTML = `<strong>Tradução correta:</strong><br>${correctTranslation || 'Não informada.'}`;
+        resultModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function hideResultModal() {
+        resultModal.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+
+      function updateCurrentPhraseDisplay() {
+        if (!currentPhrase) {
+          currentPhraseDiv.textContent = 'Carregando frase...';
+          currentPhraseDiv.className = 'text-xl font-semibold text-slate-400 min-h-[50px] flex items-center justify-center px-2';
+        } else {
+          currentPhraseDiv.textContent = currentPhrase;
+          currentPhraseDiv.className = 'text-xl font-semibold text-slate-900 min-h-[50px] flex items-center justify-center px-2';
+        }
+      }
+
+      function syncFormAvailability(disabled = false) {
+        promptInput.disabled = disabled || !currentPhrase;
+        submitButton.disabled = disabled || !currentPhrase;
+      }
+
+      function updateRefreshVisibility(forceShow = false) {
+        if (forceShow || phraseQueue.length < MIN_QUEUE_BEFORE_REFRESH_HINT) {
+          refreshButton.classList.remove('hidden');
+        } else {
+          refreshButton.classList.add('hidden');
+        }
+      }
+
+      // Phrase management
+      function toNormalizedList(phrases) {
+        if (!Array.isArray(phrases)) return [];
+        const seen = new Set(phraseQueue.map(p => p.toLowerCase()));
+        const normalized = [];
+        
+        for (const phrase of phrases) {
+          if (typeof phrase !== 'string') continue;
+          const trimmed = phrase.trim();
+          if (!trimmed) continue;
+          const key = trimmed.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          normalized.push(trimmed);
+        }
+        
+        return normalized;
+      }
+
+      function addPhrasesToQueue(phrases) {
+        if (!phrases || !phrases.length) return 0;
+        phraseQueue.push(...phrases);
+        saveQueueToStorage();
+        return phrases.length;
+      }
+
+      function loadFallbackPhrasesIntoQueue() {
+        return 0;
+      }
+
+      async function fetchNewPhrases(count = DEFAULT_BATCH_COUNT) {
+        try {
+          setStatus('Buscando novas frases...', 'info');
+          refreshButton.disabled = true;
+
+          const response = await fetch('/api/phrases', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ count })
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data?.error || 'Erro ao consultar o gerador de frases.');
+          }
+
+          const added = addPhrasesToQueue(toNormalizedList(data?.phrases));
+          if (!added) {
+            setStatus('Nenhuma nova frase foi disponibilizada neste momento.', 'info');
+            updateRefreshVisibility(true);
+            return false;
+          }
+
+          setStatus(
+            `Foram adicionadas ${added} nova${added > 1 ? 's' : ''} frase${
+              added > 1 ? 's' : ''
+            }.`,
+            'info'
+          );
+          updateRefreshVisibility();
+          return true;
+        } catch (error) {
+          console.error('Erro ao buscar novas frases da API Gemini:', error);
+          const addedFromFallback = loadFallbackPhrasesIntoQueue();
+          if (addedFromFallback) {
+            setStatus(
+              `Não foi possível contatar a API Gemini. Carregamos ${addedFromFallback} frase${
+                addedFromFallback > 1 ? 's' : ''
+              } locais para continuar o treino.`,
+              'info'
+            );
+            updateRefreshVisibility();
+            return true;
+          }
+
+          setStatus(`Erro ao buscar novas frases: ${error.message}`, 'error');
+          updateRefreshVisibility(true);
+          return false;
+        } finally {
+          refreshButton.disabled = false;
+        }
+      }
+
+      async function ensureCurrentPhraseAvailable() {
+        if (!phraseQueue.length) {
+          const fetched = await fetchNewPhrases();
+          if (!fetched && !phraseQueue.length) {
+            currentPhrase = '';
+            updateCurrentPhraseDisplay();
+            syncFormAvailability();
+            return false;
+          }
+        }
+
+        currentPhrase = phraseQueue[0] ?? '';
+        updateCurrentPhraseDisplay();
+        syncFormAvailability();
+        updateRefreshVisibility();
+
+        if (currentPhrase) {
+          setStatus('', 'info');
+          return true;
+        }
+
+        setStatus(
+          'Nenhuma frase disponível no momento. Clique em "Buscar novas frases agora".', 
+          'error'
+        );
+        updateRefreshVisibility(true);
+        return false;
+      }
+
+      async function handleSubmit(event) {
         event.preventDefault();
-        resultBox.hidden = true;
-        resultBox.classList.remove('error');
-        resultBox.textContent = 'Enviando...';
-        resultBox.hidden = false;
+
+        const translation = promptInput.value.trim();
+        showResultMessage('');
+
+        if (!translation) {
+          showResultMessage('Informe sua tradução antes de enviar.', true);
+          promptInput.focus();
+          return;
+        }
+
+        if (!currentPhrase) {
+          const hasPhrase = await ensureCurrentPhraseAvailable();
+          if (!hasPhrase) {
+            showResultMessage(
+              'Nenhuma frase disponível para avaliação agora. Busque novas frases e tente novamente.',
+              true
+            );
+            return;
+          }
+        }
+
+        syncFormAvailability(true);
+        showResultMessage('Enviando para avaliação...');
 
         try {
           const response = await fetch('/api/evaluate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: promptInput.value.trim() })
+            body: JSON.stringify({ prompt: translation, originalPhrase: currentPhrase })
           });
 
           const data = await response.json();
-
           if (!response.ok) {
-            throw new Error(data.error || 'Erro inesperado.');
+            throw new Error(data?.error || 'Erro inesperado ao avaliar tradução.');
           }
 
           const score = Number(data?.score);
-          const feedback = data?.feedback;
-          const correctTranslation = data?.correctTranslation;
+          const feedback = data?.feedback || 'Nenhum feedback disponível.';
+          const correctTranslation = data?.correctTranslation || 'Não informada.';
 
-          const lines = [];
-          if (Number.isFinite(score)) {
-            lines.push(`Nota: ${score}`);
-          }
-          if (feedback) {
-            lines.push(`Feedback: ${feedback}`);
-          }
-          if (correctTranslation) {
-            lines.push(`Tradução correta: ${correctTranslation}`);
-          }
+          showResultMessage('');
+          showResultModal(score, feedback, correctTranslation);
 
-          resultBox.textContent = lines.join('\n') || 'Nenhuma resposta recebida.';
+          phraseQueue.shift();
+          saveQueueToStorage();
         } catch (error) {
-          resultBox.textContent = `Erro: ${error.message}`;
-          resultBox.classList.add('error');
+          console.error('Erro ao avaliar tradução:', error);
+          showResultMessage(`Erro: ${error.message}`, true);
+          updateRefreshVisibility(true);
         } finally {
-          resultBox.hidden = false;
+          syncFormAvailability();
         }
       }
 
-      form.addEventListener('submit', evaluatePrompt);
+      form.addEventListener('submit', handleSubmit);
+
+      continueButton.addEventListener('click', async () => {
+        hideResultModal();
+        currentPhrase = '';
+        updateCurrentPhraseDisplay();
+        await ensureCurrentPhraseAvailable();
+        promptInput.value = '';
+        promptInput.focus({ preventScroll: true });
+      });
+
+      refreshButton.addEventListener('click', async () => {
+        await fetchNewPhrases();
+        await ensureCurrentPhraseAvailable();
+        if (currentPhrase) {
+          promptInput.focus({ preventScroll: true });
+        }
+      });
+
+      // Inicialização
+      phraseQueue = loadQueueFromStorage();
+      (async () => {
+        if (phraseQueue.length) {
+          currentPhrase = phraseQueue[0] ?? '';
+          updateCurrentPhraseDisplay();
+          syncFormAvailability();
+          updateRefreshVisibility();
+          promptInput.focus({ preventScroll: true });
+        } else {
+          setStatus('Buscando frases do Gemini...', 'info');
+          currentPhrase = '';
+          updateCurrentPhraseDisplay();
+          await ensureCurrentPhraseAvailable();
+          if (currentPhrase) {
+            promptInput.focus({ preventScroll: true });
+          }
+        }
+      })().catch((error) => {
+        setStatus(`Erro ao inicializar a aplicação: ${error.message}`, 'error');
+        updateRefreshVisibility(true);
+      });
     </script>
   </body>
 </html>
