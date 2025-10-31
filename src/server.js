@@ -94,19 +94,29 @@ function normalizePhraseList(value) {
   return normalized;
 }
 
-async function callGemini(contents) {
+async function callGemini(contents, config = {}) {
   if (!GEMINI_API_URL) {
     const error = new Error('GEMINI_API_KEY não configurada.');
     error.status = 500;
     throw error;
   }
 
+  const requestBody = {
+    contents,
+    generationConfig: {
+      temperature: config.temperature ?? 1.0,
+      topK: config.topK ?? 40,
+      topP: config.topP ?? 0.95,
+      maxOutputTokens: config.maxOutputTokens ?? 8192,
+    },
+  };
+
   const response = await fetch(GEMINI_API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ contents }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
@@ -201,14 +211,58 @@ app.post('/api/phrases', async (req, res) => {
   const targetCount = Number.isFinite(requestedCount)
     ? Math.max(1, Math.min(200, Math.round(requestedCount)))
     : 100;
+  
+  const level = req.body?.level || 'easy';
 
   try {
+    const timestamp = Date.now();
+    const randomSeed = Math.floor(Math.random() * 10000);
+    const topics = [
+      'cumprimentos e apresentações',
+      'situações cotidianas e rotina',
+      'perguntas sobre sentimentos e estados',
+      'conversas sobre comida e bebida',
+      'diálogos sobre trabalho e estudos',
+      'frases sobre tempo e clima',
+      'expressões sobre família e amigos',
+      'conversas sobre hobbies e lazer'
+    ];
+    const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+
+    // Configurações por nível
+    const levelConfig = {
+      easy: {
+        description: 'FÁCIL (iniciante)',
+        instructions: 'Frases simples e curtas (5-8 palavras), usando presente simples, vocabulário básico e estruturas gramaticais elementares.',
+        maxLength: 60,
+        examples: 'Ex: "I like coffee", "She is happy", "We go to school"'
+      },
+      medium: {
+        description: 'MÉDIO (intermediário)',
+        instructions: 'Frases de complexidade moderada (8-12 palavras), usando tempos verbais variados, vocabulário intermediário e estruturas mais elaboradas.',
+        maxLength: 100,
+        examples: 'Ex: "I have been studying English for two years", "She would like to travel next month"'
+      },
+      hard: {
+        description: 'DIFÍCIL (avançado)',
+        instructions: 'Frases complexas e longas (12-20 palavras), usando tempos verbais avançados, phrasal verbs, expressões idiomáticas, vocabulário sofisticado e estruturas gramaticais complexas.',
+        maxLength: 150,
+        examples: 'Ex: "Had I known about the consequences, I would have made a different decision", "Despite having studied thoroughly, she found the exam quite challenging"'
+      }
+    };
+
+    const config = levelConfig[level] || levelConfig.easy;
+
     const systemPrompt =
-      'Você é um gerador de frases curtas em inglês voltadas para estudantes brasileiros praticarem tradução. Gere uma lista de frases diversas, envolvendo cumprimentos, situações cotidianas e perguntas simples.\n' +
-      'Retorne SOMENTE JSON válido no formato {"phrases": ["English sentence 1", "English sentence 2", ...]}.\n' +
-      'Forneça exatamente ' +
-      targetCount +
-      ' frases diferentes, sem numeração, sem traduções em português e com no máximo 120 caracteres cada.';
+      `Você é um gerador de frases em inglês voltadas para estudantes brasileiros praticarem tradução.\n` +
+      `NÍVEL: ${config.description}\n` +
+      `INSTRUÇÕES: ${config.instructions}\n` +
+      `Exemplos do nível: ${config.examples}\n\n` +
+      `Gere uma lista de frases ÚNICAS e VARIADAS, focando principalmente em: ${randomTopic}.\n` +
+      `Importante: Use criatividade e evite frases genéricas. Cada frase deve ser diferente e interessante.\n` +
+      `Contexto único desta requisição: ${randomSeed}\n` +
+      `Retorne SOMENTE JSON válido no formato {"phrases": ["English sentence 1", "English sentence 2", ...]}.\n` +
+      `Forneça exatamente ${targetCount} frases diferentes, sem numeração, sem traduções em português e com no máximo ${config.maxLength} caracteres cada.`;
 
     const { data, aggregatedText } = await callGemini([
       {
@@ -219,7 +273,11 @@ app.post('/api/phrases', async (req, res) => {
           },
         ],
       },
-    ]);
+    ], {
+      temperature: 1.2,
+      topK: 50,
+      topP: 0.98
+    });
 
     let parsed = parseGeminiJsonPayload(aggregatedText);
     let phrases = normalizePhraseList(parsed);
