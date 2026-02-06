@@ -9,7 +9,7 @@
     "dev": "nodemon src/local-server.js"
   },
   "engines": {
-    "node": "22.x"
+    "node": "20.x"
   },
   "keywords": [],
   "author": "",
