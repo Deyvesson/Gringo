@@ -8,9 +8,6 @@
     "start": "node src/local-server.js",
     "dev": "nodemon src/local-server.js"
   },
-  "engines": {
-    "node": "20.x"
-  },
   "keywords": [],
   "author": "",
   "license": "MIT",
